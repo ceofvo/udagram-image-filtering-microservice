@@ -1,6 +1,8 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
+
+var validUrl = require('valid-url');
 
 (async () => {
 
@@ -28,6 +30,29 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   //   the filtered image file [!!TIP res.sendFile(filteredpath); might be useful]
 
   /**************************************************************************** */
+
+  app.get( "/filteredimage", async ( req: Request, res: Response) => {
+      let { image_url } = req.query;
+
+      //Check if an image url is included in query paramter
+      if ( !image_url ) {
+          return res.status(400)
+                  .send(`Image URL is required`);
+      }
+      
+      //check if the image url is valid  
+      if (!validUrl.isUri(image_url)){
+          return res.status(422)
+                  .send("Not a valid image URl. Plese check and try again");
+      } 
+      
+      //call filterImageFromURL(image_url) to filter the image, send the resulting file in the response and deletes any files on the server 
+      const filteredImageURL:string =  await filterImageFromURL( image_url );
+      res.sendFile( filteredImageURL,  () => {
+          deleteLocalFiles([filteredImageURL]);
+      });
+  });
+  
 
   //! END @TODO1
   
